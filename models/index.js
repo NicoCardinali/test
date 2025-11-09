@@ -6,16 +6,29 @@ const Sequelize = require('sequelize');
 const process = require('process');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
 const db = {};
 
-let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
+// Configuración usando variables de entorno
+const dbConfig = {
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  dialect: 'mysql',
+  dialectOptions: {
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : false
+  },
+  logging: false
+};
 
+let sequelize = new Sequelize(
+  dbConfig.database,
+  dbConfig.username,
+  dbConfig.password,
+  dbConfig
+);
+
+// Carga de modelos
 fs
   .readdirSync(__dirname)
   .filter(file => {
@@ -31,6 +44,7 @@ fs
     db[model.name] = model;
   });
 
+// Asociaciones entre modelos
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
